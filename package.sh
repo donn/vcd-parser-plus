@@ -7,7 +7,7 @@ rm -rf ./pack_space
 
 make -j$(nproc) wasm
 
-FILES=$(echo package.json index.js build/libvcdparse*)
+FILES=$(echo package.json libvcdparse_api.js build/libvcdparse*)
 
 for s in $FILES; do
     d=./pack_space/$s
