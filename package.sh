@@ -1,6 +1,6 @@
 #!/bin/sh
-set +x
-set +e
+set -x
+set -e
 
 make clean
 rm -rf ./pack_space

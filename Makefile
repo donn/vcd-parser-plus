@@ -26,7 +26,7 @@ VCD_OBJ_FILES   = $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(VCD_SRC)) $(YAC
 TEST_APP        ?= $(BUILD_DIR)/vcd-parse
 
 
-all : vcd-parser $(BUILD_DIR)/docs $(BUILD_DIR)/libverilog-vcd-parser.a
+all : vcd-parser $(BUILD_DIR)/libverilog-vcd-parser.a
 
 debug: CXXFLAGS += -g
 debug: all
@@ -34,7 +34,9 @@ debug: all
 wasm: CXX = emcc
 wasm: CXXFLAGS += --bind
 wasm: LD_FLAGS += -s NODERAWFS=1 -s WASM=1 -s EXPORTED_FUNCTIONS=["_free","_malloc","_VCDToJSON"] -s EXPORTED_RUNTIME_METHODS=["UTF8ToString","stringToUTF8","lengthBytesUTF8"]
-wasm: vcd-parser $(BUILD_DIR)/docs $(BUILD_DIR)/libvcdparse
+wasm: vcd-parser  $(BUILD_DIR)/libvcdparse
+
+docs: $(BUILD_DIR)/docs
 
 vcd-parser: $(TEST_APP)
 
