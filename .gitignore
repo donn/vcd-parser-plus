@@ -5,3 +5,4 @@
 build/
 vcdtool/vcdtool
 vcdtool/gitversion.h
+node_modules/

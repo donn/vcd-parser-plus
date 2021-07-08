@@ -11,6 +11,7 @@
 #include <string>
 #include <cstring>
 #include <cstdio>
+#include <system_error>
 
 #include "VCDFileParser.hpp"
 #include "VCDParser.hpp"
@@ -162,15 +163,17 @@ VERSION_TEXT        {COMMENT_TEXT}
     //std::cout << yytext << ", ";
     VCDTimeUnit tr = TIME_S;
 
-    if(std::strcmp(yytext, "s")) {
+    std::string time = yytext;
+    
+    if(time == "s") {
         tr = TIME_S;
-    } else if(std::strcmp(yytext, "ms")) {
+    } else if(time == "ms") {
         tr = TIME_MS;
-    } else if(std::strcmp(yytext, "us")) {
+    } else if(time == "us") {
         tr = TIME_US;
-    } else if(std::strcmp(yytext, "ns")) {
+    } else if(time == "ns") {
         tr = TIME_NS;
-    } else if(std::strcmp(yytext, "ps")) {
+    } else if(time == "ps") {
         tr = TIME_PS;
     }
 
@@ -387,12 +390,17 @@ VERSION_TEXT        {COMMENT_TEXT}
 
 void VCDFileParser::scan_begin() {
     yy_flex_debug = trace_scanning;
-    if(filepath.empty() || filepath == "-") {
-        yyin = stdin;
-    }
-    else if(!(yyin = fopen(filepath.c_str(), "r"))) {
-        error("Cannot open "+filepath+": "+strerror(errno));
-        exit(EXIT_FAILURE);
+    if(this->parse_string) {
+        if (!(yyin = fmemopen(this->parse_string, strlen(this->parse_string), "r"))) {
+            throw errno;
+        }
+    } else {
+        if(filepath.empty() || filepath == "-") {
+            yyin = stdin;
+        }
+        else if(!(yyin = fopen(filepath.c_str(), "r"))) {
+            throw errno;
+        }
     }
 }
 

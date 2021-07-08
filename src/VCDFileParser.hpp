@@ -38,10 +38,12 @@ class VCDFileParser {
         @returns A handle to the parsed VCDFile object or nullptr if parsing
         fails.
         */
-        VCDFile * parse_file(const std::string & filepath);
+        static std::string empty;
+        VCDFile * parse_file(const std::string & filepath, const std::string & parse_string = empty);
         
         //! The current file being parsed.
         std::string filepath;
+        char* parse_string;
         
         //! Should we debug tokenising?
         bool trace_scanning;
@@ -76,5 +78,8 @@ class VCDFileParser {
         void scan_end   ();
 };
 
-#endif
+extern "C" {
+    char* VCDToJSON(const char* input_file);
+}
 
+#endif

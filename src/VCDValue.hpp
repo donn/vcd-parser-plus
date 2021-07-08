@@ -10,10 +10,10 @@
 IEEE floating point number.
 */
 class VCDValue {
-
+    public:
 
     //! Convert a VCDBit to a single char
-    static char VCDBit2Char(VCDBit b) {
+    static char bit_to_char(VCDBit b) {
         switch(b) {
             case(VCD_0):
                 return '0';
@@ -27,8 +27,6 @@ class VCDValue {
         }
     }
 
-    public:
-        
         /*!
         @brief Create a new VCDValue with the type VCD_SCALAR
         */

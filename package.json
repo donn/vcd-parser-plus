@@ -1,0 +1,16 @@
+{
+  "name": "vcd-parser-plus",
+  "version": "0.1.0",
+  "description": "This is a fork of VCD Tools that makes it easier to compile and use in WASM.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donn/vcd-parser-plus.git"
+  },
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/donn/vcd-parser-plus/issues"
+  },
+  "homepage": "https://github.com/donn/vcd-parser-plus#readme"
+}

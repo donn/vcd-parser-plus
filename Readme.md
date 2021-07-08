@@ -1,4 +1,11 @@
+# VCD Parser+
+This is a fork of VCD Tools that makes it easier to compile and use in WASM.
 
+The main feature added is that the data can now be serialized as JSON in a similar manner to [vcd-parser](https://github.com/Cloud-V/vcd-parser), but cleaner given this parser's use of scopes.
+
+Other options added include the ability to parse a string directly (not from a file,)  changes to access control levels, and more.
+
+---
 # VCD Tools
 This is a multipurpose utility for handling VCD files.  
 It started as a fork of the excellent Verilog VCD Parser, therefore keeping its original README file below.  
@@ -98,14 +105,14 @@ for (VCDTime time : *trace -> get_timestamps()) {
     // Assumes val is not nullptr!
     switch(val -> get_type()) {
         case (VCD_SCALAR):
-            std::cout << VCDValue::VCDBit2Char(val -> get_value_bit());
+            std::cout << VCDValue::bit_to_char(val -> get_value_bit());
             break;
         case (VCD_VECTOR):
             VCDBitVector * vecval = val -> get_value_vector()
             for(auto it = vecval -> begin();
                      it != vecval -> end();
                      ++it) {
-                std::cout << VCDValue::VCDBit2Char(*it);
+                std::cout << VCDValue::bit_to_char(*it);
             }
             break;
         case (VCD_REAL):

@@ -3,8 +3,19 @@
 @brief Definition of the VCDFileParser class
 */
 
-#include "VCDFileParser.hpp"
+/*
+    Modified by Donn on 2021-07-07:
+        * Fixed memory leak
+        * Made it possible to parse a string instead of a file
+        * Added JSON Serialization Options
+*/
 
+#include "VCDFileParser.hpp"
+#include <sstream>
+#include <cstring>
+#include <system_error>
+#include <iomanip>
+#include <functional>
 
 VCDFileParser::VCDFileParser() {
 
@@ -18,12 +29,23 @@ VCDFileParser::VCDFileParser() {
 
 VCDFileParser::~VCDFileParser()
 {
+    if (parse_string) {
+        free(parse_string);
+    }
+    while (!scopes.empty()) {
+        delete scopes.top();
+        scopes.pop();
+    }
 }
 
-VCDFile *VCDFileParser::parse_file(const std::string &filepath)
+VCDFile *VCDFileParser::parse_file(const std::string & filepath, const std::string & parse_string)
 {
-
     this->filepath = filepath;
+    if (parse_string.length() != 0) {
+        this->parse_string = strdup(parse_string.c_str());
+    } else {
+        this->parse_string = NULL;
+    }
 
     scan_begin();
 
@@ -50,7 +72,7 @@ VCDFile *VCDFileParser::parse_file(const std::string &filepath)
 
     int result = parser.parse();
 
-    scopes.pop();
+    this->scopes.pop();
 
     scan_end();
 
@@ -78,75 +100,185 @@ void VCDFileParser::error(const std::string & m){
     std::cerr << " : "<<m<<std::endl;
 }
 
-#ifdef VCD_PARSER_STANDALONE
+std::string VCDFileParser::empty = "";
 
-void print_scope_signals(VCDScope * scope)
-{
-    for(VCDSignal * signal : scope -> signals) {
-
-        std::cout << "\t" << signal -> hash << "\t" 
-                    << signal -> reference;
-
-        if(signal -> size > 1) {
-            std::cout << "[" << signal -> lindex << ":" << signal -> rindex << "]";
-        } else if (signal -> lindex >= 0) {
-            std::cout << "[" << signal -> lindex << "]";
-        }
-        
-        std::cout << std::endl;
-
-    }
-}
-
-void traverse_scope(std::string parent, VCDScope * scope)
-{
-    std::string local_parent = parent;
-
-    if (parent.length())
-        local_parent += ".";
-    local_parent += scope->name;
-    std::cout << "Scope: " << local_parent  << std::endl;
-    print_scope_signals(scope);
-    for (auto child : scope->children) {
-        std::cout << "Child:\n";
-        traverse_scope(local_parent, child);
-    }
-}
-/*!
-@brief Standalone test function to allow testing of the VCD file parser.
-*/
-int main (int argc, char** argv){
-
-    std::string infile (argv[1]);
-
-    std::cout << "Parsing " << infile << std::endl;
-
-    VCDFileParser parser;
-
-    VCDFile * trace = parser.parse_file(infile);
-
-    if(trace) {
-        std::cout << "Parse successful." << std::endl;
-        std::cout << "Version:       " << trace -> version << std::endl;
-        std::cout << "Date:          " << trace -> date << std::endl;
-        std::cout << "Signal count:  " << trace -> get_signals() -> size() <<std::endl;
-        std::cout << "Times Recorded:" << trace -> get_timestamps() -> size() << std::endl;
-    
-        // Print out every signal in every scope.
-        for(VCDScope * scope : *trace -> get_scopes()) {
-            if (scope->parent)
-                continue;
-            traverse_scope(std::string(""), scope);
-        }
-
-        delete trace;
-        
-        return 0;
+std::string represent_timescale(VCDTimeUnit u) {
+    if (u == TIME_MS) {
+        return "ms";
+    } else if (u == TIME_US) {
+        return "us";
+    } else if (u == TIME_NS) {
+        return "ns";
+    } else if (u == TIME_PS) {
+        return "ps";
     } else {
-        std::cout << "Parse Failed." << std::endl;
-        return 1;
+        return "s";
     }
-
 }
 
-#endif
+std::string represent_VCDVarType(VCDVarType t) {
+    if (t == VCD_VAR_EVENT) {
+        return "event";
+    } else if (t == VCD_VAR_INTEGER) {
+        return "integer";
+    } else if (t == VCD_VAR_PARAMETER) {
+        return "parameter";
+    } else if (t == VCD_VAR_REAL) {
+        return "real";
+    } else if (t == VCD_VAR_REALTIME) {
+        return "realtime";
+    } else if (t == VCD_VAR_REG) {
+        return "reg";
+    } else if (t == VCD_VAR_SUPPLY0) {
+        return "supply0";
+    } else if (t == VCD_VAR_SUPPLY1) {
+        return "supply1";
+    } else if (t == VCD_VAR_TIME) {
+        return "time";
+    } else if (t == VCD_VAR_TRI) {
+        return "tri";
+    } else if (t == VCD_VAR_TRIAND) {
+        return "triand";
+    } else if (t == VCD_VAR_TRIOR) {
+        return "trior";
+    } else if (t == VCD_VAR_TRIREG) {
+        return "trireg";
+    } else if (t == VCD_VAR_TRI0) {
+        return "tri0";
+    } else if (t == VCD_VAR_TRI1) {
+        return "tri1";
+    } else if (t == VCD_VAR_WAND) {
+        return "wand";
+    } else if (t == VCD_VAR_WIRE) {
+        return "wire";
+    } else if (t == VCD_VAR_WOR) {
+        return "wor";
+    } else {
+        return "unknown";
+    }
+}
+
+static std::string represent_value(VCDValue* value) {
+    std::stringstream output;
+    auto type = value->get_type();
+    if (type == VCD_SCALAR) {
+        output << VCDValue::bit_to_char(value->get_value_bit());
+    } else if (type == VCD_VECTOR) {
+        auto& bitvector = *value->get_value_vector();
+        for(auto& bit: bitvector) {
+            output << VCDValue::bit_to_char(bit);
+        }
+    } else if (type == VCD_REAL) {
+        output << value->get_value_real();
+    }
+
+    return output.str();
+}
+
+static std::string trim(std::string input) {
+    auto c = input.c_str();
+
+    auto i = 0;
+    while (c[i] == ' ' || c[i] == '\t' || c[i] == '\n') {
+        i++;
+    }
+    auto j = input.length() - 1;
+    while (c[j] == ' ' || c[j] == '\t' || c[j] == '\n') {
+        j--;
+    }
+
+    return std::string(c + i, j - i + 1);
+}
+
+static std::string escape(std::string input) {
+    std::stringstream output;
+
+    for (auto& c: input) {
+        if ('A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == ' ' || c == '_') {
+            output << c;
+        } else {
+            output << "\\u" << std::setw(4) << std::setfill('0') << std::hex << int(c);
+        }
+    }
+
+    return output.str();
+}
+
+char* VCDToJSON(const char* input_vcd_c) {
+    auto input_vcd = std::string(input_vcd_c);
+    VCDFileParser parser;
+    VCDFile *file = parser.parse_file("*", input_vcd);
+
+    std::stringstream outstream(std::ios_base::in | std::ios_base::out);
+
+    VCDTime endtime = -1.0;
+    for (auto &t: *file->get_timestamps()) {
+        if (t > endtime) {
+            endtime = t;
+        }
+    }
+
+    auto &scopes = *file->get_scopes();
+
+    outstream << "{" << '\n';;
+        outstream << "\"date\": " << '"' << escape(trim(file->date)) << '"' << ',' << '\n';
+        outstream << "\"version\": " << '"' << escape(trim(file->version)) << '"' << ',' << '\n';
+        outstream << "\"comment\": " << '"' << escape(trim(file->comment)) << '"' << ',' << '\n';
+        outstream << "\"timescale\": " << '"' << file->time_resolution << represent_timescale(file->time_units) << '"' << ',' << '\n';
+        outstream << "\"endtime\": " << endtime << ',' << '\n';
+        outstream << "\"data\": " << '{' << '\n';
+        std::function<void(VCDScope*)> handleScopes = [&](VCDScope* currentScope) {
+                outstream << "\"signals\": " << '[' << '\n';
+                    for (auto i = 0; i < currentScope->signals.size(); i += 1) {
+                        auto& signal = *currentScope->signals[i];
+                        auto& values = *file->get_signal_values(signal.hash);
+
+                        if (i) {
+                            outstream << ',';
+                        }
+                        outstream << '{' << '\n';
+                            outstream << "\"name\": " << '"' << escape(signal.reference) << '"' << ',' << '\n'; 
+                            outstream << "\"hash\": " << '"' << escape(signal.hash) << '"' << ',' << '\n'; 
+                            outstream << "\"type\": " << '"' << represent_VCDVarType(signal.type) << '"' << ',' << '\n';
+                            outstream << "\"size\": " << signal.size << ',' << '\n';
+                            if (signal.rindex != -1) {
+                            outstream << "\"left_index\": " << signal.lindex << ',' << '\n';
+                            outstream << "\"right_index\": " << signal.rindex << ',' << '\n';
+                            }
+                            outstream << "\"waveform\": " << '[' << '\n';
+                            for (auto j = 0; j < values.size(); j += 1) {
+                                auto& value = *values[j];
+                                if (j) {
+                                    outstream << ',';
+                                }
+                                outstream << '{' << '\n';
+                                outstream << "\"time\": " << '"' << value.time << '"' << ',' << '\n'; 
+                                outstream << "\"value\": " << '"' << represent_value(value.value) << '"' << '\n';
+                                outstream << '}';
+
+
+                            }
+                            outstream << ']' << '\n';
+
+                        outstream << '}';
+                    }
+                outstream << ']' << ',';
+                outstream << "\"subscopes\": " << '{' << '\n';
+                    for (auto i = 0; i < currentScope->children.size(); i += 1) {
+                        auto& scope = *currentScope->children[i];
+                        if (i) {
+                            outstream << ',';
+                        }
+                        outstream << '"' << escape(scope.name) << '"' << ':' << '{' << '\n';
+                        handleScopes(&scope);
+                        outstream << '}' << '\n';
+                    }
+                outstream << '}' << '\n';
+        };
+        handleScopes(file->root_scope);
+        outstream << '}' << '\n';
+    outstream << '}' << '\n';
+
+    delete file;
+    return strdup(outstream.str().c_str());
+}

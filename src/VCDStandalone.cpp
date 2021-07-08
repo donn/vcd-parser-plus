@@ -1,6 +1,6 @@
 /*!
 @file
-@brief Definition of the VCDFileParser class
+@brief An Entry Point
 */
 
 #include "VCDFileParser.hpp"
