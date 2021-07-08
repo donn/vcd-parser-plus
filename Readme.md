@@ -1,9 +1,11 @@
 # VCD Parser+
-This is a fork of VCD Tools that makes it easier to compile and use in WASM.
+This was a fork of VCD Tools that makes it easier to compile and use in WASM.
 
-The main feature added is that the data can now be serialized as JSON in a similar manner to [vcd-parser](https://github.com/Cloud-V/vcd-parser), but cleaner given this parser's use of scopes.
+The main feature added was that the data can now be serialized as JSON in a similar manner to [vcd-parser](https://github.com/Cloud-V/vcd-parser), but cleaner given this parser's use of scopes.
 
 Other options added include the ability to parse a string directly (not from a file,)  changes to access control levels, and more.
+
+As it turned out, this parser did not do much in the way of… working. Test projects first. :)
 
 ---
 # VCD Tools
