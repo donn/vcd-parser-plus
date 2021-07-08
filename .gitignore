@@ -6,3 +6,5 @@ build/
 vcdtool/vcdtool
 vcdtool/gitversion.h
 node_modules/
+pack_space/
+*.tar.gz

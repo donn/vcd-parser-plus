@@ -1,0 +1,29 @@
+name: Publish
+
+on:
+  push:
+    tags: ["*"]
+
+
+jobs:
+  publish_to_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: mymindstorm/setup-emsdk@v9
+      - name: Build
+        run: sh ./package.sh
+      - name: Get GHR
+        run: go get -u github.com/tcnksm/ghr
+      - name: Upload
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+
+          ghr\
+            -t ${{ github.token }}\
+            -u ${{ github.repository_owner }}\
+            -r $(echo "${{ github.repository }}" | cut -d "/" -f 2)\
+            $(echo "${{ github.ref }}" | cut -d "/" -f 3)\
+            ./pack_space/*.tgz
+
+

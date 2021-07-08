@@ -38,7 +38,12 @@ async function parse(input) {
 
 if (require.main === module) {
     async function main() {
-        let input = fs.readFileSync("/donn/Wavedash/test/test.vcd", "utf8");
+        let args = process.argv.slice(2);
+        if (args.length != 1) {
+            console.error(`Usage: ${process.argv.slice(0, 2).join(" ")} <file>`);
+            process.exit(64);
+        }
+        let input = fs.readFileSync(args[0], "utf8");
         console.log(JSON.stringify(await parse(input), null, 2));
     }
     main();
