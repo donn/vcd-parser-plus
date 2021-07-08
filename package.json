@@ -1,6 +1,6 @@
 {
   "name": "vcd-parser-plus",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "This is a fork of VCD Tools that makes it easier to compile and use in WASM.",
   "main": "index.js",
   "scripts": {},

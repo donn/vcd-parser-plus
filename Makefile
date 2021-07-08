@@ -33,7 +33,7 @@ debug: all
 
 wasm: CXX = emcc
 wasm: CXXFLAGS += --bind
-wasm: LD_FLAGS += -s NODERAWFS=1 -s WASM=1 -s EXPORTED_FUNCTIONS=["_free","_malloc","_VCDToJSON"] -s EXPORTED_RUNTIME_METHODS=["UTF8ToString","stringToUTF8","lengthBytesUTF8"]
+wasm: LD_FLAGS += -s WASM=1 -s EXPORTED_FUNCTIONS=["_free","_malloc","_VCDToJSON"] -s EXPORTED_RUNTIME_METHODS=["UTF8ToString","stringToUTF8","lengthBytesUTF8"]
 wasm: vcd-parser  $(BUILD_DIR)/libvcdparse
 
 docs: $(BUILD_DIR)/docs
